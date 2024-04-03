@@ -7,7 +7,7 @@
 #include "InteractionInterface.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE(MinimalAPI)
+UINTERFACE(BlueprintType, meta = (CannotImplementInterfaceInBlueprint = true))
 class UInteractionInterface : public UInterface
 {
 	GENERATED_BODY()
@@ -22,7 +22,19 @@ class TESTTASK_API IInteractionInterface
 
 
 public:
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	virtual void Interact(APawn* Interactor);
-	virtual bool StartUse(bool Success);
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	virtual bool StartPrimaryUse();
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	virtual bool StartSecondaryUse();
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	virtual void StopUse();
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	virtual void CancelUse();
 };
