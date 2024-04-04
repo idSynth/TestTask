@@ -10,13 +10,13 @@ UHealthComponent::UHealthComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	SetIsReplicatedByDefault(true);
 }
 
-void UHealthComponent::Damage(float IncomingDamage, AController* Instigator, AActor* DamageCauser, bool &bDead)
+void UHealthComponent::Damage(float IncomingDamage, AController* Instigator, AActor* DamageCauser)
 {
 	Health = FMath::Clamp(Health - IncomingDamage, 0, MaxHealth);;
-	OnHealthChanged.Broadcast(Health);
+	Multicast_BroadcastHealthChange(Health);
 
 	if (bIsInvincible)
 	{
@@ -24,10 +24,9 @@ void UHealthComponent::Damage(float IncomingDamage, AController* Instigator, AAc
 	}
 
 	bIsDead = (Health <= 0.0f);
-	bDead = bIsDead;
 	if (bIsDead)
 	{
-		OnDeath.Broadcast(Instigator, DamageCauser);
+		Multicast_BroadcastDeath(Instigator, DamageCauser);
 	}
 }
 
@@ -40,7 +39,7 @@ void UHealthComponent::AddHealth(float IncomingHealth)
 
 	Health = FMath::Clamp(Health + IncomingHealth, 0, MaxHealth);
 	
-	OnHealthChanged.Broadcast(Health);
+	Multicast_BroadcastHealthChange(Health);
 }
 
 const float UHealthComponent::GetHealth()
@@ -76,5 +75,14 @@ void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+}
+
+void UHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UHealthComponent, Health);
+	DOREPLIFETIME(UHealthComponent, MaxHealth);
+	DOREPLIFETIME(UHealthComponent, bIsInvincible);
+	DOREPLIFETIME(UHealthComponent, bIsDead);
 }
 

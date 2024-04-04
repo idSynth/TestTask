@@ -50,12 +50,29 @@ public:
 	// Interface implementation ends
 
 	void ToggleAim(bool isAiming);
+	UFUNCTION(Server, Reliable)
+	void Server_ToggleAim(bool isAiming);
+	void Server_ToggleAim_Implementation(bool isAiming) { Multicast_ToggleAim(isAiming); }
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ToggleAim(bool isAiming);
+	void Multicast_ToggleAim_Implementation(bool isAiming) { ToggleAim(isAiming); }
+
 
 	void Shoot();
+	UFUNCTION(Server, Reliable)
+	void Server_Shoot();
+	void Server_Shoot_Implementation() { Shoot(); }
 
 	void LaunchProjectile();
+	UFUNCTION(Server, Reliable)
+	void Server_LaunchProjectile();
+	void Server_LaunchProjectile_Implementation() { LaunchProjectile(); }
 
 	void CalculateLineTrace();
+	UFUNCTION(Server, Reliable)
+	void Server_CalculateLineTrace();
+	void Server_CalculateLineTrace_Implementation() { CalculateLineTrace(); }
+
 
 	// TODO: Recoil
 	void AddRecoil();

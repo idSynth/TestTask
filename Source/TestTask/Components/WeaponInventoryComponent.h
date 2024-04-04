@@ -6,16 +6,20 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/ActorComponent.h"
 #include "TestTask/Items/WeaponBase.h"
+#include "Net/UnrealNetwork.h"
 #include "WeaponInventoryComponent.generated.h"
 
 class ATestTaskCharacter;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponSwitched, AWeaponBase*, CurrentWeapon);
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESTTASK_API UWeaponInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	// Sets default values for this component's properties
 	UWeaponInventoryComponent();
 
@@ -27,30 +31,51 @@ public:
 
 
 	// Equipping
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool PickupClosestItem();
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Inventory")
+	void Server_PickupClosestItem();
+	void Server_PickupClosestItem_Implementation() { PickupClosestItem(); }
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	// Helping functions
 	void EquipItem(AWeaponBase* Item);
+	UFUNCTION(NetMulticast, Reliable, BlueprintCallable, Category = "Inventory")
+	void Multicast_EquipItem(AWeaponBase* Item);
+	void Multicast_EquipItem_Implementation(AWeaponBase* Item) { EquipItem(Item); }
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void DropItem(AWeaponBase* Item);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_DropItem(AWeaponBase* Item);
+	void Multicast_DropItem_Implementation(AWeaponBase* Item) { DropItem(Item); }
+
+	//UFUNCTION(NetMulticast, Reliable)
+	//void Multicast_SendAnimTypeToInstance(/*EWeaponAnimType will be here*/);
+	//void Multicast_SendAnimTypeToInstance_Implementation(/*EWeaponAnimType will be here*/); /*{ Cast<IWeaponAnimInterface>(CurrentItem->WeaponMesh->GetAnimInstance())->SetWeaponAnimType(EWeaponAnimType); }*/
 
 	// Inventory functions
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool AddItemToInventory(AWeaponBase* PickupableActor);
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Inventory")
+	void Server_AddItemToInventory(AWeaponBase* Item);
+	void Server_AddItemToInventory_Implementation(AWeaponBase* Item) { AddItemToInventory(Item); }
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool RemoveItemFromInventory(AWeaponBase* PickupableActor);
+	bool RemoveItemFromInventory(AWeaponBase* Item);
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Inventory")
+	void Server_RemoveItemFromInventory(AWeaponBase* Item);
+	void Server_RemoveItemFromInventory_Implementation(AWeaponBase* Item) { RemoveItemFromInventory(Item); }
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void RemoveAllItemsFromInventory();
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Inventory")
+	void Server_RemoveAllItemsFromInventory();
+	void Server_RemoveAllItemsFromInventory_Implementation() { RemoveAllItemsFromInventory(); }
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool RemoveItemBySlot(int Slot);
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Inventory")
+	void Server_RemoveItemBySlot(int Slot);
+	void Server_RemoveItemBySlot_Implementation(int Slot) { RemoveItemBySlot(Slot); }
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	const bool SelectItemInSlot(int Slot);
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Inventory")
+	void Server_SelectItemInSlot(int Slot);
+	void Server_SelectItemInSlot_Implementation(int Slot) { SelectItemInSlot(Slot); }
 
 
 	// Getters
@@ -71,8 +96,17 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponSwitched OnWeaponSwitched;
+
+	//Replication
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 private:
 	
+	UPROPERTY(Replicated)
 	TArray<AWeaponBase*> Items;
+
+	UPROPERTY(Replicated)
 	TObjectPtr<AWeaponBase> CurrentItem = nullptr;
 };

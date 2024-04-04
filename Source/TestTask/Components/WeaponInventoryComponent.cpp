@@ -11,7 +11,8 @@ UWeaponInventoryComponent::UWeaponInventoryComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	
+	SetIsReplicatedByDefault(true);
+
 }
 
 // TODO: cleanup this function (maybe)?
@@ -44,6 +45,7 @@ void UWeaponInventoryComponent::EquipItem(AWeaponBase* Item)
 
 void UWeaponInventoryComponent::DropItem(AWeaponBase* Item)
 {
+	Item->SetActorHiddenInGame(false);
 	Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	Item->SetItemState(EItemState::Dropped, nullptr);
 }
@@ -62,7 +64,7 @@ bool UWeaponInventoryComponent::AddItemToInventory(AWeaponBase* Item)
 	}
 
 	Items[Item->Slot] = Item;
-	EquipItem(Item);
+	Multicast_EquipItem(Item);
 	SelectItemInSlot(Item->Slot);
 
 	return true;
@@ -76,7 +78,7 @@ bool UWeaponInventoryComponent::RemoveItemFromInventory(AWeaponBase* Item)
 	}
 
 	Item->CancelUse();
-	DropItem(Item);
+	Multicast_DropItem(Item);
 	if (CurrentItem == Item)
 	{
 		CurrentItem = nullptr;
@@ -113,6 +115,14 @@ const bool UWeaponInventoryComponent::SelectItemInSlot(int Slot)
 		return false;
 	}
 
+	for (const auto& Item : Items)
+	{
+		if (IsValid(Item))
+		{
+			Item->SetActorHiddenInGame(true);
+		}
+	}
+
 	if (IsValid(CurrentItem))
 	{
 		CurrentItem->CancelUse();
@@ -120,11 +130,16 @@ const bool UWeaponInventoryComponent::SelectItemInSlot(int Slot)
 
 	if (!IsValid(Items[Slot]))
 	{
+		//Multicast_SendAnimTypeToInstance(CurrentItem->WeaponData->WeaponAnimType) TODO: Setup weapon data and get animtype from there		
 		CurrentItem = nullptr;
+		OnWeaponSwitched.Broadcast(CurrentItem);
 		return false;
 	}
 
 	CurrentItem = Items[Slot];
+	CurrentItem->SetActorHiddenInGame(false);
+	OnWeaponSwitched.Broadcast(CurrentItem);
+	//Multicast_SendAnimTypeToInstance(CurrentItem->WeaponData->WeaponAnimType) TODO: Setup weapon data and get animtype from there
 	return true;
 }
 
@@ -164,5 +179,12 @@ void UWeaponInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+}
+
+void UWeaponInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UWeaponInventoryComponent, CurrentItem);
+	DOREPLIFETIME(UWeaponInventoryComponent, Items);
 }
 

@@ -19,21 +19,23 @@ void AWeaponBase::Interact(APawn* Interactor)
 
 bool AWeaponBase::StartPrimaryUse()
 { 
-	Shoot();
+	//TODO : add FireMode
+	//TODO : start AnimationMontage and call the Shoot function there
+	Server_Shoot();
 	UKismetSystemLibrary::PrintString(this, "StartPrimaryUse");
 	return true;
 }
 
 bool AWeaponBase::StartSecondaryUse()
 {
-	ToggleAim(true);
+	Server_ToggleAim(true);
 	UKismetSystemLibrary::PrintString(this, "StartSecondaryUse");
 	return true;
 }
 
 void AWeaponBase::StopUse()
 {
-	ToggleAim(false);
+	Server_ToggleAim(false);
 	UKismetSystemLibrary::PrintString(this, "StopUse");
 }
 
@@ -62,7 +64,7 @@ void AWeaponBase::ToggleAim(bool isAiming)
 // TODO: Choose projectile or hitscan depending on the weapon's type
 void AWeaponBase::Shoot()
 {
-	CalculateLineTrace();
+	Server_CalculateLineTrace();
 }
 
 // TODO: Projectile possibility
