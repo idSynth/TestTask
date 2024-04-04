@@ -27,6 +27,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Root")
 	USphereComponent* Collision;
 
+	UPROPERTY(VisibleAnywhere, Category = "Slots", meta = (ClampMin = 1))
+	int Slot = 1;
+
 	EItemState GetItemState();
 
 protected:

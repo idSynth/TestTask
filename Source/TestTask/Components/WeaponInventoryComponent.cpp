@@ -44,17 +44,21 @@ void UWeaponInventoryComponent::EquipItem(AWeaponBase* Item)
 
 void UWeaponInventoryComponent::DropItem(AWeaponBase* Item)
 {
-	Item->SetItemState(EItemState::Dropped, nullptr);
 	Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	Item->SetItemState(EItemState::Dropped, nullptr);
 }
-
 
 
 bool UWeaponInventoryComponent::AddItemToInventory(AWeaponBase* Item)
 {
-	Items.Insert(Item, 0);
+	if (!Items.IsValidIndex(Item->Slot))
+	{
+		return false;
+	}
+
+	Items.Insert(Item, Item->Slot);
 	EquipItem(Item);
-	SelectItemInSlot(0);
+	SelectItemInSlot(Item->Slot);
 
 	return true;
 }
@@ -68,20 +72,15 @@ bool UWeaponInventoryComponent::RemoveItemFromInventory(AWeaponBase* Item)
 
 	Item->CancelUse();
 	DropItem(Item);
-	Items.Remove(Item);
+	Items.RemoveSingle(Item);
+	SelectItemInSlot(0);
 
 	return true;
 }
 
 bool UWeaponInventoryComponent::RemoveItemBySlot(int Slot)
 {
-	
 	if (!Items.IsValidIndex(Slot))
-	{
-		return false;
-	}
-
-	if (!IsValid(Items[Slot]))
 	{
 		return false;
 	}
@@ -98,6 +97,7 @@ const bool UWeaponInventoryComponent::SelectItemInSlot(int Slot)
 
 	if (!IsValid(Items[Slot]))
 	{
+		CurrentItem = nullptr;
 		return false;
 	}
 
@@ -136,8 +136,7 @@ void UWeaponInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
+	Items.SetNum(Slots);
 }
 
 

@@ -5,9 +5,11 @@
 #include "CoreMinimal.h"
 #include "TestTask/Items/PickupableActor.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "WeaponBase.generated.h"
 
-
+class ACharacter;
+class UCharacterMovementComponent;
 
 /**
  * 
@@ -19,6 +21,20 @@ class TESTTASK_API AWeaponBase : public APickupableActor
 	
 public:
 	
+	AWeaponBase();
+
+	UPROPERTY(VisibleAnywhere, Category = "Visuals")
+	USkeletalMeshComponent* WeaponMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FName MuzzleSocketName = "Muzzle";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TEnumAsByte<ETraceTypeQuery> TraceChannel;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TEnumAsByte<EDrawDebugTrace::Type> TraceDebug;
+
 	// Interface implementation starts 
 	
 	void Interact(APawn* Interactor) override;
@@ -33,6 +49,7 @@ public:
 
 	// Interface implementation ends
 
+	void ToggleAim(bool isAiming);
 
 	void Shoot();
 
