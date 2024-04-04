@@ -44,11 +44,16 @@ public:
 	bool RemoveItemFromInventory(AWeaponBase* PickupableActor);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void RemoveAllItemsFromInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool RemoveItemBySlot(int Slot);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	const bool SelectItemInSlot(int Slot);
 
+
+	// Getters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
 	const AWeaponBase* GetCurrentItem();
 

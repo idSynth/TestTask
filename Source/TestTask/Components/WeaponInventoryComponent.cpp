@@ -56,7 +56,7 @@ bool UWeaponInventoryComponent::AddItemToInventory(AWeaponBase* Item)
 		return false;
 	}
 
-	Items.Insert(Item, Item->Slot);
+	Items[Item->Slot] = Item;
 	EquipItem(Item);
 	SelectItemInSlot(Item->Slot);
 
@@ -72,10 +72,23 @@ bool UWeaponInventoryComponent::RemoveItemFromInventory(AWeaponBase* Item)
 
 	Item->CancelUse();
 	DropItem(Item);
-	Items.RemoveSingle(Item);
+	if (CurrentItem == Item)
+	{
+		CurrentItem = nullptr;
+	}
+
+	Items[Item->Slot] = nullptr;
 	SelectItemInSlot(0);
 
 	return true;
+}
+
+void UWeaponInventoryComponent::RemoveAllItemsFromInventory()
+{
+	for (const auto& Item : Items)
+	{
+		RemoveItemFromInventory(Item);
+	}
 }
 
 bool UWeaponInventoryComponent::RemoveItemBySlot(int Slot)
@@ -95,15 +108,15 @@ const bool UWeaponInventoryComponent::SelectItemInSlot(int Slot)
 		return false;
 	}
 
+	if (IsValid(CurrentItem))
+	{
+		CurrentItem->CancelUse();
+	}
+
 	if (!IsValid(Items[Slot]))
 	{
 		CurrentItem = nullptr;
 		return false;
-	}
-
-	if (IsValid(CurrentItem))
-	{
-		CurrentItem->CancelUse();
 	}
 
 	CurrentItem = Items[Slot];
