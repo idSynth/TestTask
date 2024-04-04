@@ -56,6 +56,11 @@ bool UWeaponInventoryComponent::AddItemToInventory(AWeaponBase* Item)
 		return false;
 	}
 
+	if (IsValid(Items[Item->Slot]))
+	{
+		RemoveItemFromInventory(Items[Item->Slot]);
+	}
+
 	Items[Item->Slot] = Item;
 	EquipItem(Item);
 	SelectItemInSlot(Item->Slot);
