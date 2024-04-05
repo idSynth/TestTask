@@ -32,7 +32,6 @@ bool AWeaponBase::StartPrimaryUse()
 			break;
 		}
 	}
-	UKismetSystemLibrary::PrintString(this, "StartPrimaryUse");
 	return true;
 }
 
@@ -94,21 +93,18 @@ void AWeaponBase::PlayShootingMontage()
 bool AWeaponBase::StartSecondaryUse()
 {
 	Server_ToggleAim(true);
-	UKismetSystemLibrary::PrintString(this, "StartSecondaryUse");
 	return true;
 }
 
 void AWeaponBase::StopPrimaryUse()
 {
 	GetWorldTimerManager().ClearTimer(FiringTimer);
-	UKismetSystemLibrary::PrintString(this, "StopPrimaryUse");
 }
 
 
 void AWeaponBase::StopSecondaryUse()
 {
 	Server_ToggleAim(false);
-	UKismetSystemLibrary::PrintString(this, "StopSecondaryUse");
 }
 
 
@@ -128,7 +124,6 @@ void AWeaponBase::CancelUse()
 {
 	StopPrimaryUse();
 	StopSecondaryUse();
-	UKismetSystemLibrary::PrintString(this, "CancelUse");
 }
 
 void AWeaponBase::ToggleAim(bool bIsAiming)
