@@ -11,7 +11,6 @@
 #include "WeaponBase.generated.h"
 
 class ACharacter;
-class UCharacterMovementComponent;
 class IWeaponAnimInterface;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAmmoChanged, FWeaponStats, NewAmmo);

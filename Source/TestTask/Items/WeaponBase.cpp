@@ -4,7 +4,6 @@
 #include "TestTask/Items/WeaponBase.h"
 #include "GameFramework/DamageType.h"
 #include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "TestTask/Interfaces/WeaponAnimInterface.h"
 
 
