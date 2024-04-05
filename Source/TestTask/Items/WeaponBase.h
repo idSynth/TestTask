@@ -73,15 +73,16 @@ public:
 	void Multicast_ToggleAim_Implementation(bool isAiming) { ToggleAim(isAiming); }
 
 	void PlayShootingMontage();
-	UFUNCTION(Server, Reliable)
-	void Server_PlayShootingMontage();
-	void Server_PlayShootingMontage_Implementation() { PlayShootingMontage(); }
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayShootingMontage();
+	void Multicast_PlayShootingMontage_Implementation() { PlayShootingMontage(); }
 
 
 	void Shoot();
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Weapon")
 	void Server_Shoot();
 	void Server_Shoot_Implementation() { Shoot(); }
+	void ShootWrapper(); //Wrapper function to call a server function from timer
 
 	void LaunchProjectile();
 	UFUNCTION(Server, Reliable)

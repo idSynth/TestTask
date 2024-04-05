@@ -24,12 +24,12 @@ bool AWeaponBase::StartPrimaryUse()
 	{
 		case Single:
 		{
-			Server_PlayShootingMontage(); //Server_Shoot gets called from montage
+			Server_Shoot();
 			break;
 		}
 		case Auto:
 		{
-			GetWorldTimerManager().SetTimer(FiringTimer, this, &AWeaponBase::PlayShootingMontage, 1.0f / Stats.FireRate, true);
+			GetWorldTimerManager().SetTimer(FiringTimer, this, &AWeaponBase::ShootWrapper, 1.0f / Stats.FireRate, true);
 			break;
 		}
 	}
@@ -37,9 +37,28 @@ bool AWeaponBase::StartPrimaryUse()
 	return true;
 }
 
+void AWeaponBase::ShootWrapper()
+{
+	if (HasAuthority())
+	{
+		Shoot();
+	}
+	else
+	{
+		Server_Shoot();
+	}
+}
+
 // TODO: Choose projectile or hitscan depending on the weapon's type
 void AWeaponBase::Shoot()
 {
+	if (Stats.AmmoInMagazine <= 0)
+	{
+		GetWorldTimerManager().ClearTimer(FiringTimer);
+		StopPrimaryUse();
+		return;
+	}
+
 	//switch (WeaponData->WeaponType)      -      WeaponType doesn't exist at the moment
 	//{
 	//	case Hitscan:
@@ -53,24 +72,23 @@ void AWeaponBase::Shoot()
 
 	//	}
 	//}
+
+	Multicast_PlayShootingMontage();
 }
 
 void AWeaponBase::PlayShootingMontage()
 {
-	if (Stats.AmmoInMagazine <= 0)
+	UAnimInstance* OwnerAnimInstance = Cast<ACharacter>(GetOwner())->GetMesh()->GetAnimInstance();
+	if (!IsValid(OwnerAnimInstance))
 	{
-		GetWorldTimerManager().ClearTimer(FiringTimer);
-		StopPrimaryUse();
 		return;
 	}
 
-	if (WeaponData->ShootingMontage)
+	Cast<IWeaponAnimInterface>(OwnerAnimInstance)->Execute_PlayShootingMontage(OwnerAnimInstance);
+
+	if (WeaponData->WeaponShootingMontage)
 	{
-		WeaponMesh->GetAnimInstance()->Montage_Play(WeaponData->ShootingMontage);
-	}
-	else
-	{
-		Server_Shoot(); //Simply call Shoot from code if we don't have any animations
+		WeaponMesh->GetAnimInstance()->Montage_Play(WeaponData->WeaponShootingMontage);
 	}
 }
 

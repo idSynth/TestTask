@@ -27,4 +27,7 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "WeaponAnimation")
 	void SetAiming(bool bIsAiming);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "WeaponAnimation")
+	void PlayShootingMontage();
 };

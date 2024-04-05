@@ -61,7 +61,7 @@ public:
 	USkeletalMesh* Mesh;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Visuals")
-	UAnimMontage* ShootingMontage;
+	UAnimMontage* WeaponShootingMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Visuals")
 	TEnumAsByte<EWeaponAnimType> WeaponAnimType;
