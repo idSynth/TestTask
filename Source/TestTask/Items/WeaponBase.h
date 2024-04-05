@@ -6,15 +6,20 @@
 #include "TestTask/Items/PickupableActor.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "TestTask/Items/Data/WeaponData.h"
+#include "Net/UnrealNetwork.h"
 #include "WeaponBase.generated.h"
 
 class ACharacter;
 class UCharacterMovementComponent;
+class IWeaponAnimInterface;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAmmoChanged, FWeaponStats, NewAmmo);
 
 /**
  * 
  */
-UCLASS()
+UCLASS(meta = (PrioritizeCategories = "Stats"))
 class TESTTASK_API AWeaponBase : public APickupableActor
 {
 	GENERATED_BODY()
@@ -25,6 +30,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Visuals")
 	USkeletalMeshComponent* WeaponMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = "Stats")
+	UWeaponData* WeaponData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats", Replicated)
+	FWeaponStats Stats;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	FName MuzzleSocketName = "Muzzle";
@@ -43,7 +54,11 @@ public:
 
 	bool StartSecondaryUse() override;
 
-	void StopUse() override;
+	bool StartUtilityUse() override;
+
+	void StopPrimaryUse() override;
+
+	void StopSecondaryUse() override;
 
 	void CancelUse() override;
 
@@ -57,9 +72,14 @@ public:
 	void Multicast_ToggleAim(bool isAiming);
 	void Multicast_ToggleAim_Implementation(bool isAiming) { ToggleAim(isAiming); }
 
+	void PlayShootingMontage();
+	UFUNCTION(Server, Reliable)
+	void Server_PlayShootingMontage();
+	void Server_PlayShootingMontage_Implementation() { PlayShootingMontage(); }
+
 
 	void Shoot();
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Weapon")
 	void Server_Shoot();
 	void Server_Shoot_Implementation() { Shoot(); }
 
@@ -72,8 +92,39 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_CalculateLineTrace();
 	void Server_CalculateLineTrace_Implementation() { CalculateLineTrace(); }
+	
+	void ReloadStart();
+	UFUNCTION(Server, Reliable)
+	void Server_ReloadStart();
+	void Server_ReloadStart_Implementation() { ReloadStart(); }
 
+	void ReloadEnd();
+	UFUNCTION(Server, Reliable)
+	void Server_ReloadEnd();
+	void Server_ReloadEnd_Implementation() { ReloadEnd(); }
+
+	//Replication
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnAmmoChanged OnAmmoChanged;
+	UFUNCTION(Client, Unreliable)
+	void Client_BroadcastAmmoChanged(FWeaponStats NewStats);
+	void Client_BroadcastAmmoChanged_Implementation(FWeaponStats NewStats) { OnAmmoChanged.Broadcast(NewStats); }
+
+
+protected:
+
+	virtual void BeginPlay();
+
+
+
+private:
 
 	// TODO: Recoil
 	void AddRecoil();
+
+	FTimerHandle FiringTimer;
+
 };
+

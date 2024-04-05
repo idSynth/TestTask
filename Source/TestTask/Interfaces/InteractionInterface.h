@@ -33,7 +33,13 @@ public:
 	virtual bool StartSecondaryUse();
 
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
-	virtual void StopUse();
+	virtual bool StartUtilityUse();
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	virtual void StopPrimaryUse();
+
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	virtual void StopSecondaryUse();
 
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	virtual void CancelUse();

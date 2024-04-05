@@ -6,7 +6,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/ActorComponent.h"
 #include "TestTask/Items/WeaponBase.h"
+#include "TestTask/Interfaces/WeaponAnimInterface.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/Character.h"
 #include "WeaponInventoryComponent.generated.h"
 
 class ATestTaskCharacter;
@@ -47,9 +49,9 @@ public:
 	void Multicast_DropItem(AWeaponBase* Item);
 	void Multicast_DropItem_Implementation(AWeaponBase* Item) { DropItem(Item); }
 
-	//UFUNCTION(NetMulticast, Reliable)
-	//void Multicast_SendAnimTypeToInstance(/*EWeaponAnimType will be here*/);
-	//void Multicast_SendAnimTypeToInstance_Implementation(/*EWeaponAnimType will be here*/); /*{ Cast<IWeaponAnimInterface>(CurrentItem->WeaponMesh->GetAnimInstance())->SetWeaponAnimType(EWeaponAnimType); }*/
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SendAnimTypeToInstance(EWeaponAnimType WeaponAnimType);
+	void Multicast_SendAnimTypeToInstance_Implementation(EWeaponAnimType WeaponAnimType);
 
 	// Inventory functions
 	bool AddItemToInventory(AWeaponBase* PickupableActor);
@@ -76,6 +78,12 @@ public:
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Inventory")
 	void Server_SelectItemInSlot(int Slot);
 	void Server_SelectItemInSlot_Implementation(int Slot) { SelectItemInSlot(Slot); }
+
+	void BroadcastWeaponSwitch(AWeaponBase* Item);
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_BroadcastWeaponSwitch(AWeaponBase* Item);
+	void Multicast_BroadcastWeaponSwitch_Implementation(AWeaponBase* Item) { BroadcastWeaponSwitch(Item); }
+
 
 
 	// Getters

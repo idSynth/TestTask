@@ -19,7 +19,16 @@ bool IInteractionInterface::StartSecondaryUse()
 	return false;
 }
 
-void IInteractionInterface::StopUse()
+bool IInteractionInterface::StartUtilityUse()
+{
+	return false;
+}
+
+void IInteractionInterface::StopPrimaryUse()
+{
+}
+
+void IInteractionInterface::StopSecondaryUse()
 {
 }
 

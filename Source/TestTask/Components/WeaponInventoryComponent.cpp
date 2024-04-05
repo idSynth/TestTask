@@ -47,9 +47,20 @@ void UWeaponInventoryComponent::DropItem(AWeaponBase* Item)
 {
 	Item->SetActorHiddenInGame(false);
 	Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	Item->SetActorRotation(FQuat::MakeFromRotator(FRotator(0, Item->GetActorRotation().Yaw, 0)));
 	Item->SetItemState(EItemState::Dropped, nullptr);
 }
 
+
+void UWeaponInventoryComponent::Multicast_SendAnimTypeToInstance_Implementation(EWeaponAnimType WeaponAnimType)
+{
+	UAnimInstance* OwnerAnimInstance = Cast<ACharacter>(GetOwner())->GetMesh()->GetAnimInstance();
+	if (!IsValid(OwnerAnimInstance))
+	{
+		return;
+	}
+	Cast<IWeaponAnimInterface>(OwnerAnimInstance)->Execute_SetWeaponAnimType(OwnerAnimInstance, WeaponAnimType);
+}
 
 bool UWeaponInventoryComponent::AddItemToInventory(AWeaponBase* Item)
 {
@@ -130,17 +141,22 @@ const bool UWeaponInventoryComponent::SelectItemInSlot(int Slot)
 
 	if (!IsValid(Items[Slot]))
 	{
-		//Multicast_SendAnimTypeToInstance(CurrentItem->WeaponData->WeaponAnimType) TODO: Setup weapon data and get animtype from there		
+		Multicast_SendAnimTypeToInstance(EWeaponAnimType::Unarmed);
 		CurrentItem = nullptr;
-		OnWeaponSwitched.Broadcast(CurrentItem);
+		Multicast_BroadcastWeaponSwitch(nullptr);
 		return false;
 	}
 
 	CurrentItem = Items[Slot];
 	CurrentItem->SetActorHiddenInGame(false);
-	OnWeaponSwitched.Broadcast(CurrentItem);
-	//Multicast_SendAnimTypeToInstance(CurrentItem->WeaponData->WeaponAnimType) TODO: Setup weapon data and get animtype from there
+	Multicast_BroadcastWeaponSwitch(Items[Slot]);
+	Multicast_SendAnimTypeToInstance(CurrentItem->WeaponData->WeaponAnimType);
 	return true;
+}
+
+void UWeaponInventoryComponent::BroadcastWeaponSwitch(AWeaponBase* Item)
+{
+	OnWeaponSwitched.Broadcast(CurrentItem);
 }
 
 const AWeaponBase* UWeaponInventoryComponent::GetCurrentItem()
@@ -168,8 +184,9 @@ const TArray<AWeaponBase*> UWeaponInventoryComponent::GetAllItems()
 void UWeaponInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	Items.SetNum(Slots);
+	
+	//Init slots and add 1 to leave the first slot for empty hands
+	Items.SetNum(Slots+1);
 }
 
 

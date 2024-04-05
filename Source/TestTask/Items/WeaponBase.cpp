@@ -5,6 +5,7 @@
 #include "GameFramework/DamageType.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "TestTask/Interfaces/WeaponAnimInterface.h"
 
 
 AWeaponBase::AWeaponBase()
@@ -19,11 +20,58 @@ void AWeaponBase::Interact(APawn* Interactor)
 
 bool AWeaponBase::StartPrimaryUse()
 { 
-	//TODO : add FireMode
-	//TODO : start AnimationMontage and call the Shoot function there
-	Server_Shoot();
+	switch (Stats.FireMode)
+	{
+		case Single:
+		{
+			Server_PlayShootingMontage(); //Server_Shoot gets called from montage
+			break;
+		}
+		case Auto:
+		{
+			GetWorldTimerManager().SetTimer(FiringTimer, this, &AWeaponBase::PlayShootingMontage, 1.0f / Stats.FireRate, true);
+			break;
+		}
+	}
 	UKismetSystemLibrary::PrintString(this, "StartPrimaryUse");
 	return true;
+}
+
+// TODO: Choose projectile or hitscan depending on the weapon's type
+void AWeaponBase::Shoot()
+{
+	//switch (WeaponData->WeaponType)      -      WeaponType doesn't exist at the moment
+	//{
+	//	case Hitscan:
+	//	{
+			Server_CalculateLineTrace();
+			Stats.AmmoInMagazine--;
+			Client_BroadcastAmmoChanged(Stats);
+	//	}
+	//	case Projectile:
+	//	{
+
+	//	}
+	//}
+}
+
+void AWeaponBase::PlayShootingMontage()
+{
+	if (Stats.AmmoInMagazine <= 0)
+	{
+		GetWorldTimerManager().ClearTimer(FiringTimer);
+		StopPrimaryUse();
+		return;
+	}
+
+	if (WeaponData->ShootingMontage)
+	{
+		WeaponMesh->GetAnimInstance()->Montage_Play(WeaponData->ShootingMontage);
+	}
+	else
+	{
+		Server_Shoot(); //Simply call Shoot from code if we don't have any animations
+	}
 }
 
 bool AWeaponBase::StartSecondaryUse()
@@ -33,39 +81,53 @@ bool AWeaponBase::StartSecondaryUse()
 	return true;
 }
 
-void AWeaponBase::StopUse()
+void AWeaponBase::StopPrimaryUse()
+{
+	GetWorldTimerManager().ClearTimer(FiringTimer);
+	UKismetSystemLibrary::PrintString(this, "StopPrimaryUse");
+}
+
+
+void AWeaponBase::StopSecondaryUse()
 {
 	Server_ToggleAim(false);
-	UKismetSystemLibrary::PrintString(this, "StopUse");
+	UKismetSystemLibrary::PrintString(this, "StopSecondaryUse");
+}
+
+
+bool AWeaponBase::StartUtilityUse()
+{
+	if (Stats.AmmoInMagazine == Stats.MaxAmmoInMagazine)
+	{
+		return false;
+	}
+
+	Server_ReloadStart();
+	Server_ReloadEnd();
+	return true;
 }
 
 void AWeaponBase::CancelUse()
 {
-	//ToggleAim(false); -- problematic place at the moment, easy fix
+	StopPrimaryUse();
+	StopSecondaryUse();
 	UKismetSystemLibrary::PrintString(this, "CancelUse");
 }
 
-void AWeaponBase::ToggleAim(bool isAiming)
+void AWeaponBase::ToggleAim(bool bIsAiming)
 {
-	auto* OwnerChar = Cast<ACharacter>(GetOwner());
-	float WalkSpeedDelta = 200;
+	UAnimInstance* OwnerAnimInstance = Cast<ACharacter>(GetOwner())->GetMesh()->GetAnimInstance();
+	if (!IsValid(OwnerAnimInstance))
+	{
+		return;
+	}
 
-	if (isAiming)
-	{
-		OwnerChar->GetCharacterMovement()->MaxWalkSpeed -= WalkSpeedDelta;
-	}
-	else
-	{
-		OwnerChar->GetCharacterMovement()->MaxWalkSpeed += WalkSpeedDelta;
-	}
+	Cast<IWeaponAnimInterface>(OwnerAnimInstance)->Execute_SetAiming(OwnerAnimInstance, bIsAiming);
+
 }
 
 
-// TODO: Choose projectile or hitscan depending on the weapon's type
-void AWeaponBase::Shoot()
-{
-	Server_CalculateLineTrace();
-}
+
 
 // TODO: Projectile possibility
 void AWeaponBase::LaunchProjectile()
@@ -96,7 +158,52 @@ void AWeaponBase::CalculateLineTrace()
 	}
 
 	// TODO: ADD DAMAGE FROM STATS STRUCT
-	UGameplayStatics::ApplyDamage(HitResult.GetActor(), 25, GetInstigatorController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(HitResult.GetActor(), Stats.Damage, GetInstigatorController(), this, UDamageType::StaticClass());
 	//AddRecoil();
 }
 
+// TODO: Choose projectile or hitscan depending on the weapon's type
+void AWeaponBase::ReloadStart()
+{
+
+	if (Stats.AmmoInMagazine == Stats.MaxAmmoInMagazine)
+	{
+		return;
+	}
+
+	Stats.SpareAmmo += Stats.AmmoInMagazine;
+	Stats.AmmoInMagazine = 0;
+	Client_BroadcastAmmoChanged(Stats);
+}
+
+
+void AWeaponBase::ReloadEnd()
+{
+	Stats.AmmoInMagazine = FMath::Min(Stats.MaxAmmoInMagazine, Stats.SpareAmmo);
+	Stats.SpareAmmo -= FMath::Min(Stats.MaxAmmoInMagazine, Stats.SpareAmmo);
+	Client_BroadcastAmmoChanged(Stats);
+}
+
+
+void AWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AWeaponBase, Stats);
+}
+
+void AWeaponBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!WeaponData)
+	{
+		Destroy();
+	}
+
+	if (WeaponData)
+	{
+		WeaponMesh->SetSkeletalMesh(WeaponData->Mesh);
+		Slot = WeaponData->Slot;
+		Stats = WeaponData->InitStats;
+	}
+}
