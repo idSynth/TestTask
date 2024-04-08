@@ -28,6 +28,7 @@ bool AWeaponBase::StartPrimaryUse()
 		}
 		case Auto:
 		{
+			Server_Shoot();
 			GetWorldTimerManager().SetTimer(FiringTimer, this, &AWeaponBase::ShootWrapper, 1.0f / Stats.FireRate, true);
 			break;
 		}
